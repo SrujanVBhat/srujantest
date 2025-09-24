@@ -1,35 +1,64 @@
 pipeline {
-  agent any
-  triggers {
-    pollSCM('* * * * *') // Poll every minute for changes
-  }
-  stages {
-    stage('Compile') {
-      steps {
-        sh './mvnw compile'
-      }
+    agent any
+
+    environment {
+        MAVEN_HOME = 'C:\\apache-maven-3.9.11' // Update if Maven is in a different path
+        PATH = "${env.MAVEN_HOME}\\bin;${env.PATH}"
     }
-    stage('Test') {
-      steps {
-        sh './mvnw test'
-      }
-    }
-    stage('Package') {
-      steps {
-        sh './mvnw package'
-      }
-    }
-    stage('Sonar') {
-      steps {
-        withSonarQubeEnv('SonarQube') {
-          sh './mvnw sonar:sonar'
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo "Checking out source code..."
+                checkout scm
+            }
         }
-      }
+
+        stage('Compile') {
+            steps {
+                echo "Compiling the Spring Boot application..."
+
+                bat """cd ${WORKSPACE}\\examkishor
+                mvn clean compile"""
+            }
+        }
+
+        stage('Run Unit Tests') {
+            steps {
+                echo "Running unit tests..."
+                 bat """cd ${WORKSPACE}\\examkishor
+                mvn clean test"""
+            }
+        }
+
+        stage('Jar File Creation') {
+                    steps {
+                        echo "Running unit tests...."
+                bat """cd ${WORKSPACE}\\examkishor
+                mvn package"""
+                    }
+                }
+
+                 stage('Sonar') {
+                                    steps {
+                                        echo "Running Sonar...."
+                                bat """cd ${WORKSPACE}\\examkishor
+                                mvn sonar:sonar"""
+                                    }
+                                }
+
+
+
+
     }
-    stage('Blue Ocean') {
-      steps {
-        echo 'Visualize pipeline in Blue Ocean'
-      }
+
+    post {
+        success {
+            echo 'Build and test completed successfully.'
+        }
+        failure {
+            echo 'Build or tests failed.'
+        }
     }
-  }
 }
